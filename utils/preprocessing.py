@@ -44,6 +44,8 @@ def transform(data, dtype):
 
         # Remove outliers of Sales and CompetitionDistance
         # data = data[~(np.abs(data['Sales'] - data['Sales'].mean()) > (4.2 * data['Sales'].std()))]
+    # elif dtype == 'test':
+    #     data['Open'].fillna(1, inplace=True)
 
     # Split Date column into Year, Month, Day, DayOfWeek, DayOfYear, WeekOfYear
     # Based on https://www.kaggle.com/cast42/xgboost-in-python-with-rmspe-v2
@@ -54,14 +56,20 @@ def transform(data, dtype):
     data['DayOfYear'] = data['Date'].dt.dayofyear
     data['WeekOfYear'] = data['Date'].dt.weekofyear
 
-    # data_state_holiday = pd.get_dummies(data['StateHoliday'], prefix='StateHoliday')
-    data_store_type = pd.get_dummies(data['StoreType'], prefix='StoreType')
-    data_assortment = pd.get_dummies(data['Assortment'], prefix='Assortment')
+    data_school_holidays = data.groupby(['Store', 'Year', 'WeekOfYear'])['SchoolHoliday'].sum().reset_index(
+        name='SchoolHolidaysThisWeek')
+    data_school_holidays['SchoolHolidaysLastWeek'] = data_school_holidays['SchoolHolidaysThisWeek'].shift(-1)
+    data_school_holidays['SchoolHolidaysNextWeek'] = data_school_holidays['SchoolHolidaysThisWeek'].shift()
+    data = data.merge(data_school_holidays, on=['Store', 'Year', 'WeekOfYear'], how='left', validate='m:1')
 
-    data['CompetitionDistance'] = np.log1p(data['CompetitionDistance'].fillna(data['CompetitionDistance'].median()))
+    mappings = {'0': 0, 'a': 1, 'b': 2, 'c': 3, 'd': 4}
+    data['StoreType'].replace(mappings, inplace=True)
+    data['Assortment'].replace(mappings, inplace=True)
+    data['StateHoliday'].replace(mappings, inplace=True)
+
+    data['CompetitionDistance'] = np.log1p(data['CompetitionDistance'].fillna(data['CompetitionDistance'].mean()))
     data['CompetitionOpen'] = 12 * (data['Year'] - data['CompetitionOpenSinceYear']) + (
         data['Month'] - data['CompetitionOpenSinceMonth'])
-    data['CompetitionOpen'] = data['CompetitionOpen'].apply(lambda x: x if x > 0 else 0)
 
     data['Promo2Open'] = 12 * (data['Year'] - data['Promo2SinceYear']) + (data['WeekOfYear'] - data[
         'Promo2SinceWeek']) / 4.0
@@ -72,28 +80,17 @@ def transform(data, dtype):
         lambda x: 1 if (x['Date'].strftime('%b') if not x['Date'].strftime('%b') == 'Sep' else 'Sept') in x[
             'PromoInterval'].split(',') else 0, axis=1)
 
-    data = pd.concat(
-        [data, data_store_type, data_assortment], axis=1)
-
     if dtype == 'train':
         data.drop([
             'Date',
             'Customers',
-            'StateHoliday',
-            'StoreType',
-            'Assortment',
             'Promo2SinceWeek',
             'Promo2SinceYear',
             'PromoInterval'],
             axis=1, inplace=True)
     elif dtype == 'test':
-        data['StateHoliday_b'] = 0
-        data['StateHoliday_c'] = 0
         data.drop([
             'Date',
-            'StateHoliday',
-            'StoreType',
-            'Assortment',
             'Promo2SinceWeek',
             'Promo2SinceYear',
             'PromoInterval'],
