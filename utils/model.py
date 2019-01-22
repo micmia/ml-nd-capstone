@@ -2,6 +2,7 @@ from sklearn.externals import joblib
 from sklearn.model_selection import train_test_split
 from . import preprocessing, cv
 import xgboost as xgb
+import numpy as np
 
 
 class Model:
@@ -18,19 +19,19 @@ class Model:
         if self.use_sklearn:
             self.bst.fit(X, y)
         else:
-            X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.01, shuffle=False)
-            dtrain = xgb.DMatrix(X_train, label=preprocessing.transform_y(y_train))
-            dvalid = xgb.DMatrix(X_test, label=preprocessing.transform_y(y_test))
+            X_train, X_test, y_train, y_test = X[41088:], X[:41088], y[41088:], y[:41088]
+            dtrain = xgb.DMatrix(X_train, label=y_train)
+            dvalid = xgb.DMatrix(X_test, label=y_test)
             watchlist = [(dvalid, 'eval'), (dtrain, 'train')]
             self.bst = xgb.train(self.params, dtrain, self.kwargs['num_boost_round'], evals=watchlist,
                                  feval=cv.rmspe_xgb, early_stopping_rounds=self.kwargs['early_stopping_rounds'],
                                  verbose_eval=True)
 
-    def predict(self, X):
+    def predict(self, X, weight=0.995):
         if self.use_sklearn:
-            y_pred = self.bst.predict(X)
+            y_pred = self.bst.predict(weight * X)
         else:
-            y_pred = preprocessing.restore_y(self.bst.predict(xgb.DMatrix(X)))
+            y_pred = np.expm1(weight * self.bst.predict(xgb.DMatrix(X)))
 
         return y_pred
 
