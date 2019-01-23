@@ -26,14 +26,15 @@ $ python jupyter-notebook --no-browser --ip 127.0.0.1 --port 8888 --port-retries
 
     .
     ├── data
-    │   ├── model.joblib.dat.zip # 最终模型持久化数据（压缩包
-    │   ├── store.csv            # 商店补充信息数据集
-    │   ├── submission.csv       # 测试集预测结果
-    │   ├── test.csv             # 测试集
-    │   └── train.csv            # 训练集
+    │   ├── models
+    │   │   └── model.joblib.dat.zip # 最终模型持久化数据（压缩包）
+    │   ├── store.csv                # 商店补充信息数据集
+    │   ├── submission.csv           # 测试集预测结果
+    │   ├── test.csv                 # 测试集
+    │   └── train.csv                # 训练集
     ├── utils
-    │   ├── cv.py                # 验证工具模块
-    │   ├── model.py             # 模型构建工具模块
-    │   └── preprocessing.py     # 预处理工具模块
-    ├── report.ipynb             # 项目报告 Jupyter Notebook
-    └── report.pdf               # 项目报告
+    │   ├── cv.py                    # 验证工具模块
+    │   ├── model.py                 # 模型构建工具模块
+    │   └── preprocessing.py         # 预处理工具模块
+    ├── report.ipynb                 # 项目报告 Jupyter Notebook
+    └── report.pdf                   # 项目报告
